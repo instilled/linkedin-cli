@@ -121,6 +121,12 @@ def login():
         browser.close()
 
 
+def relogin():
+    """Re-authenticate after session expiry. Opens a headed browser."""
+    print("Session expired — opening browser to re-authenticate…")
+    login()
+
+
 def create_page(playwright):
     """Create a headless browser page with saved session. Returns (browser, page)."""
     if not has_session():

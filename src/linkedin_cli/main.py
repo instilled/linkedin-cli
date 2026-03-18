@@ -11,8 +11,6 @@ from .browser import (
     login as browser_login,
     clear_session,
     has_session,
-    ensure_browser,
-    ensure_config_dir,
     SESSION_FILE,
 )
 from .scraper import scrape_posts, scrape_profile_views, dump_page
@@ -44,64 +42,19 @@ def _print_status():
         console.print(f"  Age:      {age.days}d {age.seconds // 3600}h")
     else:
         console.print("  Status:   [yellow]not authenticated[/yellow]")
-        console.print("\n  Run [bold]linkedin init[/bold] to get started.")
+        console.print("\n  Run [bold]linkedin login[/bold] to get started.")
     console.print()
     console.print("  Commands:")
-    console.print("    linkedin init       Setup (browser install + login)")
+    console.print("    linkedin login      Authenticate (opens browser)")
     console.print("    linkedin posts      Post impressions & engagement")
     console.print("    linkedin views      Profile viewers")
-    console.print("    linkedin auth login Re-authenticate")
     console.print()
 
 
-# ── init ──────────────────────────────────────────────────────────────────
+# ── auth ─────────────────────────────────────────────────────────────────
 
 @cli.command()
-def init():
-    """First-time setup: install browser and login to LinkedIn."""
-    console.print("\n[bold]linkedin-cli setup[/bold]\n")
-
-    # Step 1: Config dir
-    console.print("[dim]1/3[/dim] Creating config directory…")
-    ensure_config_dir()
-    console.print(f"     {SESSION_FILE.parent}\n")
-
-    # Step 2: Browser
-    console.print("[dim]2/3[/dim] Checking browser…")
-    try:
-        ensure_browser()
-        console.print("     Chromium ready.\n")
-    except Exception as e:
-        console.print(f"     [red]Browser install failed: {e}[/red]")
-        console.print("     Try manually: python -m patchright install chromium")
-        sys.exit(1)
-
-    # Step 3: Login
-    console.print("[dim]3/3[/dim] Opening LinkedIn login…")
-    console.print("     A browser window will open. Log in to LinkedIn.\n")
-    try:
-        browser_login()
-    except Exception as e:
-        console.print(f"\n[red]Login failed: {e}[/red]")
-        sys.exit(1)
-
-    console.print("[green]Setup complete![/green]\n")
-    console.print("Try it out:")
-    console.print("  linkedin posts       Post impressions & engagement")
-    console.print("  linkedin views       Profile viewers")
-    console.print("  linkedin posts --json JSON output (for AI/scripts)")
-    console.print()
-
-
-# ── auth group ────────────────────────────────────────────────────────────
-
-@cli.group()
-def auth():
-    """Manage authentication."""
-
-
-@auth.command("login")
-def auth_login():
+def login():
     """Login to LinkedIn (opens a browser window)."""
     console.print("Opening browser — please log in to LinkedIn…")
     try:
@@ -112,24 +65,11 @@ def auth_login():
         sys.exit(1)
 
 
-@auth.command("logout")
-def auth_logout():
+@cli.command()
+def logout():
     """Clear saved session."""
     clear_session()
     console.print("Session cleared.")
-
-
-@auth.command("status")
-def auth_status():
-    """Show current authentication status."""
-    if has_session():
-        import os
-        from datetime import datetime
-        mtime = os.path.getmtime(SESSION_FILE)
-        age = datetime.now() - datetime.fromtimestamp(mtime)
-        console.print(f"[green]Authenticated[/green]  (session {age.days}d {age.seconds // 3600}h old)")
-    else:
-        console.print("[yellow]Not authenticated.[/yellow] Run: linkedin init")
 
 
 # ── posts ─────────────────────────────────────────────────────────────────
@@ -274,7 +214,7 @@ def dump(page):
 
 def _require_auth():
     if not has_session():
-        console.print("[red]Not authenticated. Run: linkedin init[/red]")
+        console.print("[red]Not authenticated. Run: linkedin login[/red]")
         sys.exit(1)
 
 

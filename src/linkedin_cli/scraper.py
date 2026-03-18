@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from patchright.sync_api import sync_playwright
 
-from .browser import create_page, is_logged_in
+from .browser import create_page, is_logged_in, relogin
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +141,12 @@ def scrape_posts(days=90, debug=False):
             )
             _navigate(page, url)
             if not is_logged_in(page):
-                raise RuntimeError("Session expired. Run 'linkedin login' again.")
+                browser.close()
+                relogin()
+                browser, page = create_page(p)
+                _navigate(page, url)
+                if not is_logged_in(page):
+                    raise RuntimeError("Session expired. Run 'linkedin login' again.")
 
             # Load all posts
             _load_all_posts(page)
@@ -313,9 +318,15 @@ def scrape_profile_views(debug=False):
     with sync_playwright() as p:
         browser, page = create_page(p)
         try:
-            _navigate(page, "https://www.linkedin.com/me/profile-views/")
+            views_url = "https://www.linkedin.com/me/profile-views/"
+            _navigate(page, views_url)
             if not is_logged_in(page):
-                raise RuntimeError("Session expired. Run 'linkedin login' again.")
+                browser.close()
+                relogin()
+                browser, page = create_page(p)
+                _navigate(page, views_url)
+                if not is_logged_in(page):
+                    raise RuntimeError("Session expired. Run 'linkedin login' again.")
 
             text = page.inner_text("body")
             if debug:
