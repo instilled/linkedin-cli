@@ -8,13 +8,13 @@ Uses browser automation ([Patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/pa
 
 ```bash
 # Requires Python 3.11+ and uv
-uv tool install git+https://github.com/fabio-bernasconi/linkedin-cli
+uv tool install git+https://github.com/instilled/linkedin-cli
 ```
 
 Or clone and install locally:
 
 ```bash
-git clone https://github.com/fabio-bernasconi/linkedin-cli
+git clone https://github.com/instilled/linkedin-cli
 cd linkedin-cli
 uv sync
 uv run linkedin --help
@@ -76,6 +76,15 @@ linkedin posts --json | jq '.posts[] | {text: .text[:60], impressions}'
 1. **Login**: Opens a real Chromium browser (via Patchright) for you to log in manually. Saves cookies.
 2. **Scraping**: Navigates to LinkedIn's analytics pages headlessly and parses the rendered page text.
 3. **Anti-detection**: Patchright patches Playwright's automation flags. Realistic Chrome/macOS fingerprint with proper `sec-ch-ua` headers.
+
+## Who wrote this
+
+| | Code | Share |
+|---|---|---|
+| Human | Direction, prompts, debugging nudges | ~1% |
+| AI Agent ([Claude Code](https://claude.ai/claude-code)) | Research, architecture, implementation, parsing, docs | ~99% |
+
+Built in a single conversation — from API research to working CLI.
 
 ## Notes
 
