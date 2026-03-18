@@ -183,8 +183,17 @@ def posts(days, as_json, debug):
     table.add_column("Reposts", justify="right", style="magenta")
 
     for p in post_list:
+        pub = p.get("published_at", "")
+        if pub:
+            from datetime import datetime as _dt
+            try:
+                date_str = _dt.fromisoformat(pub).strftime("%Y-%m-%d %H:%M")
+            except ValueError:
+                date_str = pub
+        else:
+            date_str = p.get("timeago", "")
         table.add_row(
-            p.get("published_date", p.get("timeago", "")),
+            date_str,
             p.get("text", "")[:60],
             f'{p.get("impressions", 0):,}',
             f'{p.get("reactions", 0):,}',

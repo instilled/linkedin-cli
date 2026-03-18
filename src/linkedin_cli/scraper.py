@@ -71,6 +71,28 @@ def _parse_timeago(timeago_str):
     return (now - delta) if delta else None
 
 
+_ACTIVITY_ID_RE = re.compile(r"urn:li:activity:(\d+)")
+
+
+def _activity_id_to_datetime(activity_id):
+    """Extract the exact publish time from a LinkedIn Snowflake activity ID."""
+    from datetime import timezone
+    ts_ms = int(activity_id) >> 22
+    return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+
+
+def _extract_activity_ids(page):
+    """Return a list of activity IDs from the post links on the page."""
+    seen = []
+    links = page.locator('a[href*="/feed/update/urn:li:activity:"]').all()
+    for link in links:
+        href = link.get_attribute("href") or ""
+        m = _ACTIVITY_ID_RE.search(href)
+        if m and m.group(1) not in seen:
+            seen.append(m.group(1))
+    return seen
+
+
 def _load_all_posts(page):
     """Click the 'Show more' pagination button to load all posts.
 
@@ -124,6 +146,9 @@ def scrape_posts(days=90, debug=False):
             # Load all posts
             _load_all_posts(page)
 
+            # Extract activity IDs (Snowflake IDs with exact timestamps)
+            activity_ids = _extract_activity_ids(page)
+
             # Extract summary stats
             summary = _parse_summary(page)
 
@@ -131,15 +156,25 @@ def scrape_posts(days=90, debug=False):
             text = page.inner_text("body")
             posts = _parse_posts_from_text(text)
 
-            # Add published_date and filter by requested window
-            cutoff = datetime.now() - timedelta(days=days)
-            filtered = []
-            for post in posts:
-                dt = _parse_timeago(post["timeago"])
-                if dt:
-                    post["published_date"] = dt.strftime("%Y-%m-%d")
-                    if dt >= cutoff:
-                        filtered.append(post)
+            # Match activity IDs to posts (same order on the page)
+            for i, post in enumerate(posts):
+                if i < len(activity_ids):
+                    dt = _activity_id_to_datetime(activity_ids[i])
+                    post["published_at"] = dt.isoformat()
+                    post["activity_id"] = activity_ids[i]
+                else:
+                    # Fallback to timeago approximation
+                    dt = _parse_timeago(post["timeago"])
+                    if dt:
+                        post["published_at"] = dt.isoformat()
+
+            # Filter by requested window
+            cutoff = datetime.now(tz=__import__("datetime").timezone.utc) - timedelta(days=days)
+            filtered = [
+                p for p in posts
+                if "published_at" not in p
+                or datetime.fromisoformat(p["published_at"]) >= cutoff
+            ]
 
             if debug:
                 print(f"Summary: {json.dumps(summary, indent=2)}")
